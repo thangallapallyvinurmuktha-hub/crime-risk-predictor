@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
@@ -13,7 +13,7 @@ from sklearn.metrics import accuracy_score
 # =====================================================
 # APP INITIALIZATION
 # =====================================================
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../frontend")
 CORS(app)
 
 # =====================================================
@@ -112,6 +112,9 @@ def get_risk_level(risk):
 # =====================================================
 @app.route("/")
 def home():
+    return send_from_directory("../frontend", "index.html")
+@app.route("/")
+def home():
     return "Crime Risk Predictor API is running"
 
 @app.route("/cities", methods=["GET"])
@@ -200,3 +203,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
     app.run(host="0.0.0.0", port=port)
+
