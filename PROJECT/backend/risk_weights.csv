@@ -1,0 +1,8 @@
+factor,condition,weight
+gender,male,1.05
+gender,female,1
+gender,others,1
+fatal,fatal,1.25
+fatal,non-fatal,1
+case,pending,1.1
+case,closed,1
