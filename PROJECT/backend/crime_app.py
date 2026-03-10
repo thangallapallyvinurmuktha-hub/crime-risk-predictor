@@ -110,6 +110,9 @@ def get_risk_level(risk):
 # =====================================================
 # API ROUTES
 # =====================================================
+@app.route("/")
+def home():
+    return "Crime Risk Predictor API is running"
 
 @app.route("/cities", methods=["GET"])
 def get_cities():
@@ -195,4 +198,5 @@ def calculate_risk():
 # =====================================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+
     app.run(host="0.0.0.0", port=port)
