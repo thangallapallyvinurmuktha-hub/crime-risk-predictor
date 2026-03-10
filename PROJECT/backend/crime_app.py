@@ -13,7 +13,7 @@ from sklearn.metrics import accuracy_score
 # =====================================================
 # APP INITIALIZATION
 # =====================================================
-app = Flask(__name__, static_folder="../frontend")
+app = Flask(__name__, static_folder="frontend", static_url_path="")
 CORS(app)
 
 # =====================================================
@@ -112,8 +112,7 @@ def get_risk_level(risk):
 # =====================================================
 @app.route("/")
 def home():
-    return send_from_directory("../../frontend", "index.html")
-
+    return send_from_directory("frontend", "index.html")
 @app.route("/cities", methods=["GET"])
 def get_cities():
     return jsonify(sorted(crime_df["City"].unique()))
@@ -200,6 +199,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
     app.run(host="0.0.0.0", port=port)
+
 
 
 
