@@ -178,7 +178,7 @@ def calculate_risk():
         ml_risk = ml_probability * 100
 
         # Hybrid Final Risk
-        final_risk = round(min((rule_risk * 0.5 + ml_risk * 0.5), 100), 28
+        final_risk = round(min((rule_risk * 0.5 + ml_risk * 0.5), 100), 2)
         return jsonify({
             "city": city,
             "crime": crime,
@@ -198,6 +198,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
     app.run(host="0.0.0.0", port=port)
+
 
 
 
