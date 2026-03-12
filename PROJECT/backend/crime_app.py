@@ -13,7 +13,7 @@ from sklearn.metrics import accuracy_score
 # =====================================================
 # APP INITIALIZATION
 # =====================================================
-app = Flask(__name__, static_folder="frontend", static_url_path="")
+app = Flask(__name__, static_folder="frontend", template_folder="frontend")
 CORS(app)
 
 # =====================================================
@@ -178,8 +178,7 @@ def calculate_risk():
         ml_risk = ml_probability * 100
 
         # Hybrid Final Risk
-        final_risk = round(min((rule_risk * 0.5 + ml_risk * 0.5), 100), 2)
-
+        final_risk = round(min((rule_risk * 0.5 + ml_risk * 0.5), 100), 28
         return jsonify({
             "city": city,
             "crime": crime,
@@ -199,6 +198,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
     app.run(host="0.0.0.0", port=port)
+
 
 
 
