@@ -112,7 +112,7 @@ def get_risk_level(risk):
 # =====================================================
 @app.route("/")
 def home():
-    return send_from_directory("frontend", "index.html")
+    return app.send_static_file("index.html")
 @app.route("/cities", methods=["GET"])
 def get_cities():
     return jsonify(sorted(crime_df["City"].unique()))
@@ -198,6 +198,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
     app.run(host="0.0.0.0", port=port)
+
 
 
 
