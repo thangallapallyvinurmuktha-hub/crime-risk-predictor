@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrimeRisk India — Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════
+   DESIGN SYSTEM
+═══════════════════════════════════════ */
+:root {
+  --bg:       #05070d;
+  --bg1:      #080b14;
+  --bg2:      #0d1120;
+  --bg3:      #111828;
+  --border:   rgba(255,255,255,0.06);
+  --border2:  rgba(255,255,255,0.1);
+  --red:      #ff2d55;
+  --red-dim:  rgba(255,45,85,0.15);
+  --amber:    #ff9f0a;
+  --amber-dim:rgba(255,159,10,0.12);
+  --green:    #30d158;
+  --green-dim:rgba(48,209,88,0.12);
+  --blue:     #0a84ff;
+  --blue-dim: rgba(10,132,255,0.12);
+  --cyan:     #5ac8fa;
+  --text:     #f0f2f8;
+  --text2:    #8b8fa8;
+  --text3:    #4a4f68;
+  --font-disp:'Bebas Neue', sans-serif;
+  --font-body:'DM Sans', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+  --r:        12px;
+  --r2:       20px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* SCANLINE OVERLAY */
+body::after {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: repeating-linear-gradient(0deg,
+    transparent 0px, transparent 2px,
+    rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+}
+
+/* AMBIENT GLOW */
+.ambient {
+  position: fixed; pointer-events: none; z-index: 0;
+  border-radius: 50%; filter: blur(120px); opacity: 0.12;
+}
+.ambient-1 { width: 600px; height: 600px; background: var(--red); top: -200px; right: -200px; }
+.ambient-2 { width: 500px; height: 500px; background: var(--blue); bottom: -100px; left: -100px; }
+.ambient-3 { width: 300px; height: 300px; background: var(--amber); top: 50%; left: 50%; transform: translate(-50%,-50%); opacity: 0.06; }
+
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+header {
+  position: sticky; top: 0; z-index: 100;
+  height: 64px;
+  background: rgba(5,7,13,0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 2rem; gap: 2rem;
+}
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none;
+}
+.brand-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--red) 0%, #ff6b35 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+  box-shadow: 0 4px 20px rgba(255,45,85,0.4);
+}
+.brand-name {
+  font-family: var(--font-disp);
+  font-size: 1.5rem; letter-spacing: 0.05em;
+  line-height: 1;
+}
+.brand-name span { color: var(--red); }
+.brand-badge {
+  font-family: var(--font-mono); font-size: 0.55rem;
+  color: var(--green); background: var(--green-dim);
+  border: 1px solid rgba(48,209,88,0.2);
+  padding: 2px 7px; border-radius: 4px; letter-spacing: 0.1em;
+  margin-left: 4px;
+}
+nav { display: flex; gap: 2px; margin-left: auto; }
+nav button {
+  background: none; border: none; color: var(--text2);
+  cursor: pointer; font-family: var(--font-body); font-size: 0.82rem;
+  font-weight: 500; padding: 7px 16px; border-radius: 8px;
+  transition: all 0.2s; letter-spacing: 0.01em;
+}
+nav button:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+nav button.active { color: var(--text); background: rgba(255,255,255,0.08); }
+.nav-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--red); margin: 0 auto; margin-top: 3px;
+  display: none;
+}
+nav button.active .nav-dot { display: block; }
+
+/* ═══════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════ */
+main { position: relative; z-index: 1; }
+.page { display: none; }
+.page.active { display: block; animation: pageIn 0.4s cubic-bezier(0.16,1,0.3,1); }
+@keyframes pageIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.container { max-width: 1300px; margin: 0 auto; padding: 0 2rem; }
+
+/* ═══════════════════════════════════════
+   HERO BANNER
+═══════════════════════════════════════ */
+.hero-banner {
+  position: relative; overflow: hidden;
+  min-height: 460px;
+  display: flex; align-items: center;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255,45,85,0.08) 0%, transparent 60%),
+    linear-gradient(to bottom, var(--bg) 0%, transparent 30%, transparent 70%, var(--bg) 100%),
+    url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80&auto=format') center/cover no-repeat;
+  filter: grayscale(60%) brightness(0.3);
+  z-index: 0;
+}
+.hero-banner .container { position: relative; z-index: 1; padding-top: 4rem; padding-bottom: 4rem; }
+.hero-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 0.7rem; color: var(--red);
+  background: var(--red-dim); border: 1px solid rgba(255,45,85,0.2);
+  padding: 5px 14px; border-radius: 100px; margin-bottom: 1.5rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.hero-label::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--red); animation: blink 1.5s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.hero h1 {
+  font-family: var(--font-disp);
+  font-size: clamp(3.5rem, 7vw, 6rem);
+  line-height: 0.95; letter-spacing: 0.02em;
+  margin-bottom: 1.5rem;
+}
+.hero h1 .line2 { color: var(--red); display: block; }
+.hero p {
+  color: var(--text2); font-size: 1rem; font-weight: 300;
+  max-width: 520px; line-height: 1.8; margin-bottom: 2.5rem;
+}
+.hero-pills { display: flex; flex-wrap: wrap; gap: 10px; }
+.pill {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border2);
+  border-radius: 100px; padding: 8px 18px;
+  font-size: 0.8rem; color: var(--text2); font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+.pill .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.pill .dot.r { background: var(--red); }
+.pill .dot.g { background: var(--green); }
+.pill .dot.a { background: var(--amber); }
+.pill .dot.b { background: var(--blue); }
+
+/* ═══════════════════════════════════════
+   SECTION TITLES
+═══════════════════════════════════════ */
+.section { padding: 3rem 0; }
+.section-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap;
+}
+.section-title {
+  font-family: var(--font-disp);
+  font-size: 2rem; letter-spacing: 0.04em; line-height: 1;
+}
+.section-title span { color: var(--red); }
+.section-sub {
+  font-family: var(--font-mono); font-size: 0.65rem;
+  color: var(--text3); letter-spacing: 0.12em; text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════
+   STAT CARDS
+═══════════════════════════════════════ */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 1rem; }
+.stat-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 1.5rem 1.75rem;
+  position: relative; overflow: hidden;
+  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+  cursor: default;
+}
+.stat-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border2);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+.stat-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  border-radius: var(--r2) var(--r2) 0 0;
+}
+.stat-card.c-red::before   { background: linear-gradient(90deg, var(--red), #ff6b35); }
+.stat-card.c-amber::before { background: linear-gradient(90deg, var(--amber), #ffd60a); }
+.stat-card.c-green::before { background: linear-gradient(90deg, var(--green), #34c759); }
+.stat-card.c-blue::before  { background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+.stat-bg-icon {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  font-size: 4rem; opacity: 0.06; pointer-events: none;
+}
+.stat-label {
+  font-family: var(--font-mono); font-size: 0.62rem;
+  color: var(--text3); letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+.stat-value { font-family: var(--font-disp); font-size: 2.6rem; letter-spacing: 0.02em; line-height: 1; }
+.stat-card.c-red .stat-value   { color: var(--red); }
+.stat-card.c-amber .stat-value { color: var(--amber); }
+.stat-card.c-green .stat-value { color: var(--green); }
+.stat-card.c-blue .stat-value  { color: var(--blue); }
+.stat-footer { font-size: 0.78rem; color: var(--text3); margin-top: 6px; }
+.stat-trend { font-size: 0.7rem; font-weight: 600; }
+.stat-trend.up { color: var(--red); }
+.stat-trend.dn { color: var(--green); }
+
+/* ═══════════════════════════════════════
+   CHART CARDS
+═══════════════════════════════════════ */
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px,1fr)); gap: 1.25rem; }
+.chart-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 1.75rem;
+  transition: border-color 0.25s;
+}
+.chart-card:hover { border-color: var(--border2); }
+.chart-card.full { grid-column: 1/-1; }
+.chart-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.chart-title { font-size: 0.82rem; font-weight: 600; color: var(--text2); letter-spacing: 0.02em; }
+.chart-badge {
+  font-family: var(--font-mono); font-size: 0.58rem;
+  padding: 3px 9px; border-radius: 6px;
+  background: rgba(255,255,255,0.05); color: var(--text3);
+  border: 1px solid var(--border); letter-spacing: 0.06em;
+}
+.chart-wrap { position: relative; height: 230px; }
+.chart-wrap.tall { height: 280px; }
+
+/* ═══════════════════════════════════════
+   PREDICT PAGE
+═══════════════════════════════════════ */
+.predict-hero {
+  background:
+    linear-gradient(135deg, rgba(10,132,255,0.06) 0%, rgba(255,45,85,0.04) 100%),
+    url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1400&q=80&auto=format') center/cover;
+  min-height: 220px;
+  border-radius: 0; position: relative; overflow: hidden;
+  display: flex; align-items: center;
+}
+.predict-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to right, var(--bg1) 40%, transparent 100%);
+}
+.predict-hero .container { position: relative; z-index: 1; padding-top: 3rem; padding-bottom: 3rem; }
+
+.predict-layout {
+  display: grid; grid-template-columns: 420px 1fr; gap: 1.5rem;
+  align-items: start;
+}
+@media(max-width:900px) { .predict-layout { grid-template-columns: 1fr; } }
+
+.form-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 2rem; position: sticky; top: 80px;
+}
+.form-title { font-family: var(--font-disp); font-size: 1.8rem; letter-spacing: 0.04em; margin-bottom: 0.4rem; }
+.form-desc { color: var(--text2); font-size: 0.85rem; line-height: 1.7; margin-bottom: 2rem; }
+.form-group { margin-bottom: 1.2rem; }
+.form-group label {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 0.62rem;
+  color: var(--text3); letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.form-group select {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); border-radius: var(--r); padding: 11px 16px;
+  font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234a4f68' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+  padding-right: 36px;
+}
+.form-group select:focus { border-color: rgba(255,45,85,0.4); box-shadow: 0 0 0 3px rgba(255,45,85,0.08); }
+.predict-btn {
+  width: 100%; padding: 14px 20px;
+  background: linear-gradient(135deg, var(--red) 0%, #ff4d6d 100%);
+  color: #fff; border: none; border-radius: var(--r);
+  font-family: var(--font-disp); font-size: 1.2rem; letter-spacing: 0.06em;
+  cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(255,45,85,0.3);
+  margin-top: 0.5rem;
+}
+.predict-btn::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.2s;
+}
+.predict-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(255,45,85,0.45); }
+.predict-btn:hover::before { opacity: 1; }
+.predict-btn:active { transform: translateY(0); }
+
+/* RESULT PANEL */
+.result-panel {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); overflow: hidden;
+}
+.result-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 5rem 2rem; text-align: center; gap: 1rem;
+  background: url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&q=60&auto=format') center/cover;
+  position: relative;
+}
+.result-empty::before {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(5,7,13,0.85); border-radius: var(--r2);
+}
+.result-empty > * { position: relative; z-index: 1; }
+.result-empty-icon { font-size: 3.5rem; filter: grayscale(1); opacity: 0.4; }
+.result-empty p { color: var(--text3); font-size: 0.85rem; max-width: 260px; }
+
+.result-body { display: none; padding: 0; }
+.result-body.show { display: block; }
+.result-img-bar {
+  height: 180px; position: relative; overflow: hidden;
+}
+.result-img-bar img {
+  width: 100%; height: 100%; object-fit: cover; filter: brightness(0.4) saturate(0.6);
+  transition: transform 0.6s ease;
+}
+.result-panel:hover .result-img-bar img { transform: scale(1.04); }
+.result-img-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 0%, var(--bg2) 100%);
+}
+.result-img-label {
+  position: absolute; top: 16px; left: 20px;
+  font-family: var(--font-mono); font-size: 0.62rem;
+  color: rgba(255,255,255,0.5); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.result-content { padding: 1.75rem; }
+.result-loc {
+  font-family: var(--font-disp); font-size: 2rem; letter-spacing: 0.04em;
+  margin-bottom: 1.5rem; line-height: 1;
+}
+.result-loc span { color: var(--red); }
+
+/* RISK GAUGE */
+.gauge-wrap { margin: 1.5rem 0; }
+.gauge-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.gauge-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
+.gauge-score { font-family: var(--font-disp); font-size: 3rem; line-height: 1; letter-spacing: 0.02em; }
+.gauge-max { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text3); }
+.gauge-track {
+  height: 10px; background: rgba(255,255,255,0.06);
+  border-radius: 100px; overflow: hidden; position: relative;
+}
+.gauge-fill {
+  height: 100%; width: 0%; border-radius: 100px;
+  transition: width 1.2s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+}
+.gauge-fill::after {
+  content: '';
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; border-radius: 50%;
+  background: inherit; border: 2px solid var(--bg2);
+  box-shadow: 0 0 8px currentColor;
+}
+.gauge-stops {
+  display: flex; justify-content: space-between; margin-top: 6px;
+}
+.gauge-stop { font-family: var(--font-mono); font-size: 0.58rem; }
+
+.badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 1.25rem 0; }
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 0.68rem;
+  padding: 5px 13px; border-radius: 8px; letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.badge.danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,45,85,0.2); }
+.badge.warn   { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,159,10,0.2); }
+.badge.safe   { background: var(--green-dim); color: var(--green); border: 1px solid rgba(48,209,88,0.2); }
+.badge.info   { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(10,132,255,0.2); }
+
+.crime-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; margin: 1.25rem 0; }
+.crime-cell {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1rem; text-align: center;
+  transition: border-color 0.2s;
+}
+.crime-cell:hover { border-color: var(--border2); }
+.crime-cell .icon { font-size: 1.5rem; display: block; margin-bottom: 6px; }
+.crime-cell .val  { font-family: var(--font-disp); font-size: 1.5rem; letter-spacing: 0.02em; color: var(--amber); }
+.crime-cell .lbl  { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+/* PRECAUTIONS SECTION */
+.precautions { margin-top: 1.75rem; }
+.prec-header { font-family: var(--font-disp); font-size: 1.4rem; letter-spacing: 0.04em; margin-bottom: 1rem; }
+.prec-header span { color: var(--amber); }
+.prec-cards { display: flex; flex-direction: column; gap: 0.75rem; }
+.prec-card {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--r); padding: 1rem 1.25rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.prec-card:hover { border-left-color: var(--red); transform: translateX(3px); }
+.prec-card .prec-icon { font-size: 1.4rem; flex-shrink: 0; padding-top: 2px; }
+.prec-card .prec-text strong { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; }
+.prec-card .prec-text p { font-size: 0.78rem; color: var(--text2); line-height: 1.6; }
+
+/* ═══════════════════════════════════════
+   EXPLORER PAGE
+═══════════════════════════════════════ */
+.explorer-hero {
+  background:
+    linear-gradient(to right, var(--bg1) 35%, transparent 100%),
+    url('https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1400&q=80&auto=format') right center/cover;
+  min-height: 200px;
+  display: flex; align-items: center;
+}
+.filter-bar {
+  display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+.filter-bar select {
+  flex: 1; min-width: 160px;
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text); border-radius: var(--r); padding: 10px 16px;
+  font-family: var(--font-body); font-size: 0.88rem; outline: none;
+  appearance: none; cursor: pointer; transition: border-color 0.2s;
+}
+.filter-bar select:focus { border-color: rgba(255,45,85,0.3); }
+.search-input {
+  flex: 2; min-width: 200px;
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text); border-radius: var(--r); padding: 10px 16px;
+  font-family: var(--font-body); font-size: 0.88rem; outline: none;
+  transition: border-color 0.2s;
+}
+.search-input::placeholder { color: var(--text3); }
+.search-input:focus { border-color: rgba(255,45,85,0.3); }
+
+.tbl-wrap {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--bg3); }
+th {
+  font-family: var(--font-mono); font-size: 0.62rem; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 13px 18px; text-align: left; white-space: nowrap;
+  cursor: pointer; transition: color 0.2s; user-select: none;
+}
+th:hover { color: var(--text2); }
+td { padding: 13px 18px; font-size: 0.82rem; border-top: 1px solid var(--border); }
+tbody tr { cursor: pointer; transition: background 0.15s; }
+tbody tr:hover td { background: rgba(255,255,255,0.025); }
+td.mono { font-family: var(--font-mono); font-size: 0.78rem; }
+.rbadge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 0.62rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 7px; letter-spacing: 0.05em;
+}
+.rbadge.low  { background: var(--green-dim); color: var(--green); }
+.rbadge.med  { background: var(--amber-dim); color: var(--amber); }
+.rbadge.high { background: var(--red-dim);   color: var(--red); }
+.rbadge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.district-detail {
+  margin-top: 1.5rem;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); overflow: hidden; display: none;
+  animation: pageIn 0.3s ease;
+}
+.district-detail.show { display: block; }
+.detail-img {
+  height: 160px; position: relative; overflow: hidden;
+}
+.detail-img img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.35) saturate(0.5); }
+.detail-img-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to right, var(--bg2) 0%, transparent 50%, var(--bg2) 100%);
+}
+.detail-content { padding: 1.75rem; }
+.detail-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+.detail-title { font-family: var(--font-disp); font-size: 1.8rem; letter-spacing: 0.04em; }
+.detail-sub { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text3); letter-spacing: 0.08em; margin-top: 4px; }
+
+/* ═══════════════════════════════════════
+   SAFETY TIPS PAGE
+═══════════════════════════════════════ */
+.safety-hero {
+  background:
+    linear-gradient(to bottom, rgba(255,45,85,0.05) 0%, transparent 50%),
+    url('https://images.unsplash.com/photo-1584483766114-2cea6facdf57?w=1400&q=80&auto=format') center/cover;
+  min-height: 240px; display: flex; align-items: center; position: relative;
+}
+.safety-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(5,7,13,0.7) 0%, var(--bg1) 100%);
+}
+.safety-hero .container { position: relative; z-index: 1; padding-top: 3.5rem; padding-bottom: 3.5rem; }
+
+.crime-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2rem; }
+.crime-tab {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text2); border-radius: 100px; padding: 8px 18px;
+  font-size: 0.82rem; font-weight: 500; cursor: pointer;
+  transition: all 0.2s;
+}
+.crime-tab:hover { border-color: var(--border2); color: var(--text); }
+.crime-tab.active { background: var(--red-dim); border-color: rgba(255,45,85,0.3); color: var(--red); }
+.crime-tab .tab-emoji { font-size: 1rem; }
+
+.crime-section { display: none; animation: pageIn 0.3s ease; }
+.crime-section.show { display: block; }
+
+.crime-overview {
+  display: grid; grid-template-columns: 1fr 1.4fr; gap: 2rem;
+  align-items: start; margin-bottom: 2.5rem;
+}
+@media(max-width:768px){ .crime-overview{grid-template-columns:1fr} }
+
+.crime-img-card {
+  border-radius: var(--r2); overflow: hidden;
+  position: relative; aspect-ratio: 4/3;
+}
+.crime-img-card img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.6) saturate(0.7); }
+.crime-img-card .img-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,45,85,0.2) 0%, transparent 60%);
+}
+.crime-img-card .img-label {
+  position: absolute; bottom: 16px; left: 20px;
+  font-family: var(--font-disp); font-size: 2.2rem; letter-spacing: 0.04em;
+  line-height: 1; text-shadow: 0 2px 20px rgba(0,0,0,0.8);
+}
+.crime-img-card .img-stat {
+  position: absolute; top: 16px; right: 16px;
+  background: rgba(5,7,13,0.8); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 8px 14px; text-align: center;
+  backdrop-filter: blur(10px);
+}
+.crime-img-card .img-stat strong { display: block; font-family: var(--font-disp); font-size: 1.6rem; color: var(--red); }
+.crime-img-card .img-stat span { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.crime-info h3 { font-family: var(--font-disp); font-size: 1.6rem; letter-spacing: 0.04em; margin-bottom: 0.5rem; }
+.crime-info > p { color: var(--text2); font-size: 0.9rem; line-height: 1.8; margin-bottom: 1.5rem; }
+.info-stats { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.info-stat {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 10px 16px; flex: 1; min-width: 120px;
+}
+.info-stat .v { font-family: var(--font-disp); font-size: 1.6rem; color: var(--amber); }
+.info-stat .l { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 1rem; }
+.tip-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 1.5rem; position: relative; overflow: hidden;
+  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+.tip-card:hover {
+  transform: translateY(-3px); border-color: var(--border2);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+}
+.tip-card::before {
+  content: ''; position: absolute;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--red-dim); top: -20px; right: -20px;
+  transition: transform 0.3s;
+}
+.tip-card:hover::before { transform: scale(1.4); }
+.tip-num {
+  font-family: var(--font-mono); font-size: 0.6rem;
+  color: var(--red); letter-spacing: 0.1em; margin-bottom: 0.75rem;
+}
+.tip-icon { font-size: 1.8rem; margin-bottom: 0.75rem; display: block; }
+.tip-title { font-size: 0.92rem; font-weight: 700; margin-bottom: 0.5rem; }
+.tip-desc { font-size: 0.8rem; color: var(--text2); line-height: 1.7; }
+
+/* EMERGENCY BOX */
+.emergency-box {
+  background: linear-gradient(135deg, rgba(255,45,85,0.08) 0%, rgba(255,45,85,0.03) 100%);
+  border: 1px solid rgba(255,45,85,0.2); border-radius: var(--r2);
+  padding: 2rem; margin-top: 2rem;
+  display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;
+}
+.emergency-icon { font-size: 3rem; flex-shrink: 0; }
+.emergency-content h3 { font-family: var(--font-disp); font-size: 1.4rem; letter-spacing: 0.04em; color: var(--red); margin-bottom: 0.5rem; }
+.emergency-content p { font-size: 0.85rem; color: var(--text2); line-height: 1.7; }
+.emergency-numbers { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+.emergency-num {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: var(--r); padding: 8px 16px;
+  font-family: var(--font-mono); font-size: 0.78rem;
+}
+.emergency-num strong { color: var(--amber); display: block; font-size: 1rem; }
+.emergency-num span { color: var(--text3); font-size: 0.6rem; }
+
+/* ABOUT PAGE */
+.about-hero {
+  background:
+    linear-gradient(to right, var(--bg1) 40%, transparent 100%),
+    url('https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=1400&q=80&auto=format') right center/cover;
+  min-height: 200px; display: flex; align-items: center;
+}
+.about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1.25rem; }
+.about-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 1.75rem; position: relative; overflow: hidden;
+}
+.about-card::after {
+  content: attr(data-icon);
+  position: absolute; bottom: -10px; right: 10px;
+  font-size: 5rem; opacity: 0.04; pointer-events: none;
+}
+.about-card h3 { font-family: var(--font-disp); font-size: 1.4rem; letter-spacing: 0.04em; margin-bottom: 0.5rem; }
+.about-card p { color: var(--text2); font-size: 0.83rem; line-height: 1.75; }
+.about-list { list-style: none; margin-top: 1rem; }
+.about-list li {
+  display: flex; gap: 12px; padding: 9px 0;
+  border-bottom: 1px solid var(--border); font-size: 0.83rem;
+  align-items: flex-start;
+}
+.about-list li:last-child { border: none; }
+.about-list .num { font-family: var(--font-mono); font-size: 0.6rem; color: var(--red); padding-top: 3px; min-width: 20px; }
+.about-list .txt { color: var(--text2); line-height: 1.5; }
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+footer {
+  border-top: 1px solid var(--border); margin-top: 4rem; padding: 2rem;
+  text-align: center; font-family: var(--font-mono); font-size: 0.62rem;
+  color: var(--text3); letter-spacing: 0.08em;
+}
+footer span { color: var(--red); }
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media(max-width:640px) {
+  header { padding: 0 1rem; gap: 1rem; }
+  .brand-name { font-size: 1.2rem; }
+  .brand-badge { display: none; }
+  nav button { padding: 6px 10px; font-size: 0.75rem; }
+  .container { padding: 0 1rem; }
+  .crime-grid { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="ambient ambient-1"></div>
+<div class="ambient ambient-2"></div>
+<div class="ambient ambient-3"></div>
+
+<!-- ══════════════════════════════════
+     HEADER
+══════════════════════════════════ -->
+<header>
+  <div class="brand">
+    <div class="brand-icon">🛡️</div>
+    <div>
+      <div class="brand-name">CRIME<span>RISK</span></div>
+    </div>
+    <div class="brand-badge">🐍 PYTHON ML</div>
+  </div>
+  <nav>
+    <button class="active" onclick="showPage('dashboard',this)">
+      Dashboard<div class="nav-dot"></div>
+    </button>
+    <button onclick="showPage('predict',this)">
+      Predict<div class="nav-dot"></div>
+    </button>
+    <button onclick="showPage('explorer',this)">
+      Explorer<div class="nav-dot"></div>
+    </button>
+    <button onclick="showPage('safety',this)">
+      Safety Tips<div class="nav-dot"></div>
+    </button>
+    <button onclick="showPage('about',this)">
+      About<div class="nav-dot"></div>
+    </button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ══════════════════════════════════
+     DASHBOARD
+══════════════════════════════════ -->
+<div id="page-dashboard" class="page active">
+
+  <div class="hero-banner">
+    <div class="hero-bg"></div>
+    <div class="container">
+      <div class="hero-label">India Crime Intelligence Platform</div>
+      <h1 class="hero">
+        PREDICT<br>
+        <span class="line2">& PREVENT</span>
+      </h1>
+      <p>Machine learning powered crime risk analysis across 12 major Indian states. 20 years of district-level data, real predictions for 2025.</p>
+      <div class="hero-pills">
+        <div class="pill"><div class="dot r"></div>1,200 Records Analysed</div>
+        <div class="pill"><div class="dot g"></div>60 Districts Mapped</div>
+        <div class="pill"><div class="dot a"></div>2025 Predictions Ready</div>
+        <div class="pill"><div class="dot b"></div>Random Forest 93.75% + Gradient Boosting</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-title">KEY <span>METRICS</span></div>
+          <div class="section-sub">// India Crime Statistics · 2024</div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card c-red">
+          <div class="stat-bg-icon">🔴</div>
+          <div class="stat-label">Total Crimes (2024)</div>
+          <div class="stat-value">276K</div>
+          <div class="stat-footer">across all 60 districts <span class="stat-trend up">↑ 29% since 2005</span></div>
+        </div>
+        <div class="stat-card c-amber">
+          <div class="stat-bg-icon">📍</div>
+          <div class="stat-label">Highest Crime State</div>
+          <div class="stat-value" style="font-size:1.8rem">Telangana</div>
+          <div class="stat-footer">511,076 total crimes (20yr) <span class="stat-trend up">Risk: 10.0</span></div>
+        </div>
+        <div class="stat-card c-blue">
+          <div class="stat-bg-icon">💻</div>
+          <div class="stat-label">Cyber Crime (2024)</div>
+          <div class="stat-value">73K</div>
+          <div class="stat-footer">fastest growing category <span class="stat-trend up">↑ 401% since 2005</span></div>
+        </div>
+        <div class="stat-card c-green">
+          <div class="stat-bg-icon">⚠️</div>
+          <div class="stat-label">Most Common Crime</div>
+          <div class="stat-value" style="font-size:2rem">THEFT</div>
+          <div class="stat-footer">153,831 cases in 2024 <span class="stat-trend dn">55.7% of all crimes</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="padding-top:0">
+      <div class="section-head">
+        <div>
+          <div class="section-title">CRIME <span>TRENDS</span></div>
+          <div class="section-sub">// National overview 2005–2024</div>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card full">
+          <div class="chart-top">
+            <div class="chart-title">Total Crime Trend in India</div>
+            <div class="chart-badge">2005 — 2024</div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="c-trend"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-top">
+            <div class="chart-title">Crime Type Breakdown (2024)</div>
+            <div class="chart-badge">DISTRIBUTION</div>
+          </div>
+          <div class="chart-wrap"><canvas id="c-donut"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-top">
+            <div class="chart-title">Top States by Crime Volume</div>
+            <div class="chart-badge">ALL YEARS</div>
+          </div>
+          <div class="chart-wrap"><canvas id="c-states"></canvas></div>
+        </div>
+        <div class="chart-card full">
+          <div class="chart-top">
+            <div class="chart-title">Cyber Crime Growth (2005–2024)</div>
+            <div class="chart-badge">+401% GROWTH</div>
+          </div>
+          <div class="chart-wrap"><canvas id="c-cyber"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PREDICT
+══════════════════════════════════ -->
+<div id="page-predict" class="page">
+  <div class="predict-hero">
+    <div class="container">
+      <div class="hero-label">ML-Powered 2025 Forecast</div>
+      <h1 class="hero" style="font-size:clamp(2.5rem,5vw,4rem)">CRIME RISK<br><span class="line2">PREDICTOR</span></h1>
+      <p style="max-width:460px">Select any state and district to get the predicted crime risk score for 2025, dominant crime type, and personalised safety precautions.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+      <div class="predict-layout">
+        <div class="form-card">
+          <div class="form-title">SELECT LOCATION</div>
+          <p class="form-desc">Trained on 20 years of data using Random Forest (crime type) and Gradient Boosting (risk score) models.</p>
+          <div class="form-group">
+            <label>📍 State</label>
+            <select id="pred-state" onchange="updateDistricts()">
+              <option value="">— Choose a State —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>🏙️ District</label>
+            <select id="pred-district">
+              <option value="">— Choose a District —</option>
+            </select>
+          </div>
+          <button class="predict-btn" onclick="runPrediction()">ANALYSE RISK FOR 2025</button>
+
+          <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border)">
+            <div style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.75rem">Model Details</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div class="badge info">🤖 Random Forest — crime type</div>
+              <div class="badge info">📈 Gradient Boosting — risk score</div>
+              <div class="badge safe">✅ Trained on 1,200 data points</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="result-panel">
+          <div class="result-empty" id="res-empty">
+            <div class="result-empty-icon">🔍</div>
+            <h3 style="font-family:var(--font-disp);font-size:1.5rem;letter-spacing:0.04em">AWAITING INPUT</h3>
+            <p>Choose a state and district to see the full crime risk analysis and personalised safety tips.</p>
+          </div>
+
+          <div class="result-body" id="res-body">
+            <div class="result-img-bar">
+              <img id="res-hero-img" src="" alt="">
+              <div class="result-img-overlay"></div>
+              <div class="result-img-label">RISK ANALYSIS · 2025 FORECAST</div>
+            </div>
+            <div class="result-content">
+              <div class="result-loc" id="res-loc">—</div>
+
+              <div class="gauge-wrap">
+                <div class="gauge-row">
+                  <span class="gauge-label">Predicted Risk Score 2025</span>
+                  <div><span class="gauge-score" id="res-score">—</span><span class="gauge-max">&thinsp;/ 10</span></div>
+                </div>
+                <div class="gauge-track">
+                  <div class="gauge-fill" id="res-fill"></div>
+                </div>
+                <div class="gauge-stops">
+                  <span class="gauge-stop" style="color:var(--green)">0 · SAFE</span>
+                  <span class="gauge-stop" style="color:var(--amber)">5 · MODERATE</span>
+                  <span class="gauge-stop" style="color:var(--red)">10 · CRITICAL</span>
+                </div>
+              </div>
+
+              <div class="badge-row" id="res-badges"></div>
+
+              <div class="crime-grid" id="res-crime-grid"></div>
+
+              <div class="precautions" id="res-precautions"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     EXPLORER
+══════════════════════════════════ -->
+<div id="page-explorer" class="page">
+  <div class="explorer-hero">
+    <div class="container">
+      <div class="hero-label" style="margin-bottom:1rem">District Data Explorer</div>
+      <h1 class="hero" style="font-size:clamp(2.5rem,5vw,4rem)">ALL <span class="line2">DISTRICTS</span></h1>
+      <p style="max-width:420px;margin-top:0.5rem">Browse all 60 districts, filter by state, and click any row to see the full crime breakdown chart.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+      <div class="filter-bar">
+        <input class="search-input" type="text" placeholder="🔍  Search district or state..." oninput="filterTable()" id="search-inp">
+        <select id="filt-state" onchange="filterTable()">
+          <option value="">All States</option>
+        </select>
+        <select id="filt-sort" onchange="filterTable()">
+          <option value="Total_Crime">Sort: Total Crime</option>
+          <option value="Murder">Sort: Murder</option>
+          <option value="Theft">Sort: Theft</option>
+          <option value="Cyber_Crime">Sort: Cyber Crime</option>
+          <option value="risk_score">Sort: Risk Score</option>
+          <option value="predicted_risk_2025">Sort: 2025 Prediction</option>
+        </select>
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>District</th>
+              <th>Total Crime</th>
+              <th>Murder</th>
+              <th>Theft</th>
+              <th>Cyber</th>
+              <th>Risk Score</th>
+              <th>2025 Forecast</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+      </div>
+
+      <div class="district-detail" id="dist-detail">
+        <div class="detail-img">
+          <img id="detail-img" src="" alt="">
+          <div class="detail-img-overlay"></div>
+        </div>
+        <div class="detail-content">
+          <div class="detail-head">
+            <div>
+              <div class="detail-title" id="detail-title">—</div>
+              <div class="detail-sub" id="detail-sub">—</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:220px"><canvas id="c-district"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SAFETY TIPS
+══════════════════════════════════ -->
+<div id="page-safety" class="page">
+  <div class="safety-hero">
+    <div class="container">
+      <div class="hero-label">Crime Prevention Guide</div>
+      <h1 class="hero" style="font-size:clamp(2.5rem,5vw,4.5rem)">STAY<br><span class="line2">SAFE</span></h1>
+      <p style="max-width:480px;margin-top:0.5rem">Evidence-based precautions and safety guidelines for every major crime category tracked in our dataset.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+      <div class="crime-tabs">
+        <button class="crime-tab active" onclick="showCrime('theft',this)"><span class="tab-emoji">🏠</span> Theft</button>
+        <button class="crime-tab" onclick="showCrime('cybercrime',this)"><span class="tab-emoji">💻</span> Cyber Crime</button>
+        <button class="crime-tab" onclick="showCrime('murder',this)"><span class="tab-emoji">⚠️</span> Violence</button>
+        <button class="crime-tab" onclick="showCrime('kidnapping',this)"><span class="tab-emoji">👤</span> Kidnapping</button>
+        <button class="crime-tab" onclick="showCrime('rape',this)"><span class="tab-emoji">🚨</span> Women Safety</button>
+      </div>
+
+      <!-- THEFT -->
+      <div class="crime-section show" id="crime-theft">
+        <div class="crime-overview">
+          <div class="crime-img-card">
+            <img src="https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=600&q=80&auto=format" alt="Theft prevention">
+            <div class="img-overlay"></div>
+            <div class="img-label">THEFT<br>PREVENTION</div>
+            <div class="img-stat"><strong>153K</strong><span>Cases 2024</span></div>
+          </div>
+          <div class="crime-info">
+            <h3>Theft & Burglary</h3>
+            <p>Theft accounts for over 55% of all recorded crimes in our dataset, making it the single most common offence. It ranges from petty pickpocketing in crowded areas to organised residential burglaries. Hotspots include major urban centres like Delhi, Mumbai, Hyderabad, and Bengaluru.</p>
+            <div class="info-stats">
+              <div class="info-stat"><div class="v">55%</div><div class="l">Of all crimes</div></div>
+              <div class="info-stat"><div class="v">153K</div><div class="l">Cases in 2024</div></div>
+              <div class="info-stat"><div class="v">Urban</div><div class="l">Hotspot type</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tips-grid">
+          <div class="tip-card"><div class="tip-num">TIP // 01</div><div class="tip-icon">🔒</div><div class="tip-title">Secure Your Home</div><div class="tip-desc">Install double-lock doors, window grilles, and a CCTV system. Use smart door locks. Ensure all entry points are locked before sleeping or going out.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 02</div><div class="tip-icon">💼</div><div class="tip-title">Protect Valuables in Public</div><div class="tip-desc">Use front-facing bags or money belts in crowded places. Keep phones and wallets in inner pockets. Avoid displaying expensive jewellery in busy markets.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 03</div><div class="tip-icon">🚗</div><div class="tip-title">Vehicle Security</div><div class="tip-desc">Always lock your vehicle and never leave valuables on the seat. Use steering wheel locks. Park in well-lit, visible areas. Install GPS trackers in bikes and cars.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 04</div><div class="tip-icon">👁️</div><div class="tip-title">Know Your Neighbourhood</div><div class="tip-desc">Join a local neighbourhood watch group. Report suspicious strangers or vehicles loitering near homes. Keep emergency contact numbers handy.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 05</div><div class="tip-icon">💡</div><div class="tip-title">Lighting & Visibility</div><div class="tip-desc">Ensure your home exterior is well lit. Motion-sensor lights are effective deterrents. Avoid keeping your home in complete darkness when you travel.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 06</div><div class="tip-icon">📋</div><div class="tip-title">Document Everything</div><div class="tip-desc">Keep serial numbers and photos of expensive items. Store documents in a digital cloud backup. Register vehicles and electronics under your name formally.</div></div>
+        </div>
+      </div>
+
+      <!-- CYBER CRIME -->
+      <div class="crime-section" id="crime-cybercrime">
+        <div class="crime-overview">
+          <div class="crime-img-card">
+            <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80&auto=format" alt="Cyber crime">
+            <div class="img-overlay"></div>
+            <div class="img-label">CYBER<br>DEFENCE</div>
+            <div class="img-stat"><strong>+401%</strong><span>Growth since 2005</span></div>
+          </div>
+          <div class="crime-info">
+            <h3>Cyber Crime</h3>
+            <p>Cyber crime has grown over 400% since 2005 and is now the fastest-growing crime category in India. It includes online fraud, phishing, identity theft, social media crimes, ransomware attacks, and financial scams — particularly targeting elderly citizens and first-time internet users.</p>
+            <div class="info-stats">
+              <div class="info-stat"><div class="v">73K</div><div class="l">Cases 2024</div></div>
+              <div class="info-stat"><div class="v">+401%</div><div class="l">Since 2005</div></div>
+              <div class="info-stat"><div class="v">Digital</div><div class="l">Hotspot type</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tips-grid">
+          <div class="tip-card"><div class="tip-num">TIP // 01</div><div class="tip-icon">🔐</div><div class="tip-title">Strong Passwords</div><div class="tip-desc">Use unique passwords of 12+ characters with symbols, numbers, and mixed case for every account. Use a password manager like Bitwarden. Enable 2-factor authentication everywhere.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 02</div><div class="tip-icon">🎣</div><div class="tip-title">Beware of Phishing</div><div class="tip-desc">Never click links in unexpected emails or SMS. Verify bank/UPI requests by calling official numbers. Government agencies never ask for OTP or passwords over call.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 03</div><div class="tip-icon">💳</div><div class="tip-title">Safe Online Payments</div><div class="tip-desc">Use UPI apps with screen lock. Never share OTP with anyone. Check for HTTPS before entering card details. Set transaction limits on internet banking.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 04</div><div class="tip-icon">📱</div><div class="tip-title">Secure Your Devices</div><div class="tip-desc">Keep software and apps updated. Use trusted antivirus software. Avoid using public Wi-Fi for banking. Don't install apps from outside official stores.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 05</div><div class="tip-icon">🌐</div><div class="tip-title">Social Media Privacy</div><div class="tip-desc">Don't post personal details (address, phone, travel plans) publicly. Review app permissions regularly. Disable location tagging on photos before posting.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 06</div><div class="tip-icon">🚨</div><div class="tip-title">Report Immediately</div><div class="tip-desc">File a complaint at cybercrime.gov.in or call 1930 (National Cybercrime Helpline) immediately if you're scammed. Time is critical in fraud recovery.</div></div>
+        </div>
+      </div>
+
+      <!-- MURDER / VIOLENCE -->
+      <div class="crime-section" id="crime-murder">
+        <div class="crime-overview">
+          <div class="crime-img-card">
+            <img src="https://images.unsplash.com/photo-1580121441575-41bcb5c6b47c?w=600&q=80&auto=format" alt="Violence prevention">
+            <div class="img-overlay"></div>
+            <div class="img-label">VIOLENCE<br>AWARENESS</div>
+            <div class="img-stat"><strong>18.8K</strong><span>Cases 2024</span></div>
+          </div>
+          <div class="crime-info">
+            <h3>Violence & Murder</h3>
+            <p>Violent crimes including murder are often linked to domestic disputes, land conflicts, or organised crime. Most cases occur in known relationships. Awareness, conflict resolution, and de-escalation are the most effective preventive measures.</p>
+            <div class="info-stats">
+              <div class="info-stat"><div class="v">18.8K</div><div class="l">Cases 2024</div></div>
+              <div class="info-stat"><div class="v">Known</div><div class="l">Offender type</div></div>
+              <div class="info-stat"><div class="v">Domestic</div><div class="l">Hotspot type</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tips-grid">
+          <div class="tip-card"><div class="tip-num">TIP // 01</div><div class="tip-icon">🕊️</div><div class="tip-title">Conflict De-escalation</div><div class="tip-desc">Avoid heated arguments in public or with strangers. Walk away from confrontations. Speak calmly and avoid aggressive body language in disputes.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 02</div><div class="tip-icon">🍺</div><div class="tip-title">Avoid Risky Environments</div><div class="tip-desc">Avoid poorly lit streets and venues late at night. Be cautious at events involving alcohol or large emotional crowds. Trust your instincts when a place feels unsafe.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 03</div><div class="tip-icon">🏠</div><div class="tip-title">Domestic Safety</div><div class="tip-desc">If facing domestic violence, contact the Women Helpline 181 or police 100 immediately. Document incidents. Know your local shelter or NGO support contacts.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 04</div><div class="tip-icon">👥</div><div class="tip-title">Travel in Groups</div><div class="tip-desc">Avoid isolated areas at night, especially alone. Inform family of your whereabouts. Share live location with trusted contacts when traveling to new places.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 05</div><div class="tip-icon">📢</div><div class="tip-title">Report Threats Early</div><div class="tip-desc">If you receive threats from someone, report immediately to local police and get an FIR registered. Don't ignore repeated threats as they often escalate.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 06</div><div class="tip-icon">🧠</div><div class="tip-title">Mental Health Awareness</div><div class="tip-desc">Seek counselling during extreme personal or financial stress. Support family members showing signs of crisis. iCall: 9152987821 (TISS mental health helpline).</div></div>
+        </div>
+      </div>
+
+      <!-- KIDNAPPING -->
+      <div class="crime-section" id="crime-kidnapping">
+        <div class="crime-overview">
+          <div class="crime-img-card">
+            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&q=80&auto=format" alt="Child safety">
+            <div class="img-overlay"></div>
+            <div class="img-label">CHILD &<br>PERSONAL SAFETY</div>
+            <div class="img-stat"><strong>18.6K</strong><span>Cases 2024</span></div>
+          </div>
+          <div class="crime-info">
+            <h3>Kidnapping & Abduction</h3>
+            <p>Kidnapping cases in India are often targeted at children and women. Many cases involve known individuals. Teaching children about personal safety, maintaining communication, and being aware of surroundings are critical preventive steps.</p>
+            <div class="info-stats">
+              <div class="info-stat"><div class="v">18.6K</div><div class="l">Cases 2024</div></div>
+              <div class="info-stat"><div class="v">Children</div><div class="l">Most targeted</div></div>
+              <div class="info-stat"><div class="v">Known</div><div class="l">Offender type</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tips-grid">
+          <div class="tip-card"><div class="tip-num">TIP // 01</div><div class="tip-icon">👨‍👩‍👧</div><div class="tip-title">Child Safety Education</div><div class="tip-desc">Teach children their home address, parents' phone numbers, and what to do if lost. Teach the concept of "safe touch" and trusted adults they can approach.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 02</div><div class="tip-icon">📍</div><div class="tip-title">Always Share Location</div><div class="tip-desc">Use family location-sharing apps like Google Family Link. Children should always inform parents of their whereabouts. Set up check-in habits.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 03</div><div class="tip-icon">🚶</div><div class="tip-title">Safe Routes</div><div class="tip-desc">Plan and stick to known safe routes to school and work. Avoid shortcuts through deserted areas. Change routine if you feel followed.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 04</div><div class="tip-icon">📵</div><div class="tip-title">Stranger Awareness</div><div class="tip-desc">Teach children never to accept gifts, rides, or accompany strangers. Establish a family code word for emergency situations. Role-play scenarios at home.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 05</div><div class="tip-icon">🆔</div><div class="tip-title">Identity Tags</div><div class="tip-desc">Young children should carry ID tags with emergency contact info. For outings, note what your child is wearing. Register children's biometrics where available.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 06</div><div class="tip-icon">📞</div><div class="tip-title">Act Immediately</div><div class="tip-desc">If a child goes missing, immediately call 1098 (Childline) and local police. File an FIR without delay — don't wait 24 hours as the first hours are critical.</div></div>
+        </div>
+      </div>
+
+      <!-- WOMEN SAFETY -->
+      <div class="crime-section" id="crime-rape">
+        <div class="crime-overview">
+          <div class="crime-img-card">
+            <img src="https://images.unsplash.com/photo-1571772996211-2f02c9727629?w=600&q=80&auto=format" alt="Women safety">
+            <div class="img-overlay"></div>
+            <div class="img-label">WOMEN'S<br>SAFETY</div>
+            <div class="img-stat"><strong>21K</strong><span>Cases 2024</span></div>
+          </div>
+          <div class="crime-info">
+            <h3>Women's Safety</h3>
+            <p>Crimes against women including assault and rape remain a critical concern across India. Awareness, self-defence knowledge, use of safety apps, and knowing one's legal rights are powerful tools. Most perpetrators are known individuals, making early intervention vital.</p>
+            <div class="info-stats">
+              <div class="info-stat"><div class="v">21K</div><div class="l">Cases 2024</div></div>
+              <div class="info-stat"><div class="v">Known</div><div class="l">Offender type</div></div>
+              <div class="info-stat"><div class="v">Nirbhaya</div><div class="l">Fund available</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tips-grid">
+          <div class="tip-card"><div class="tip-num">TIP // 01</div><div class="tip-icon">📱</div><div class="tip-title">Safety Apps</div><div class="tip-desc">Use apps like Himmat+ (Delhi Police), Suraksha (UP Police), or bSafe with SOS features. Set emergency contacts. Enable automatic location sharing when travelling alone.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 02</div><div class="tip-icon">🥋</div><div class="tip-title">Self-Defence</div><div class="tip-desc">Enrol in a basic self-defence class. Carry legal personal safety items like a personal alarm (135 dB). Know vulnerable body pressure points. Confidence in body language deters attackers.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 03</div><div class="tip-icon">🚕</div><div class="tip-title">Safe Transport</div><div class="tip-desc">Use trusted cab apps. Share ride details with someone. Sit in the back seat. Verify driver's name and number plate before getting in. Trust your gut — cancel if uncomfortable.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 04</div><div class="tip-icon">👗</div><div class="tip-title">Workplace Safety</div><div class="tip-desc">Know your organisation's POSH (Prevention of Sexual Harassment) policy. Report early to the Internal Complaints Committee. Keep records of incidents with dates and witnesses.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 05</div><div class="tip-icon">⚖️</div><div class="tip-title">Know Your Rights</div><div class="tip-desc">A woman can file a complaint at any police station regardless of jurisdiction. Police cannot refuse an FIR. You can file online at the State Police portal. Legal aid is free.</div></div>
+          <div class="tip-card"><div class="tip-num">TIP // 06</div><div class="tip-icon">🤝</div><div class="tip-title">Community Support</div><div class="tip-desc">Join neighbourhood women's safety networks. Intervene as a bystander when you witness harassment. The iCall (9152987821) and One Stop Centre (181) offer free counselling.</div></div>
+        </div>
+      </div>
+
+      <!-- EMERGENCY NUMBERS -->
+      <div class="emergency-box">
+        <div class="emergency-icon">🆘</div>
+        <div class="emergency-content">
+          <h3>EMERGENCY HELPLINES — INDIA</h3>
+          <p>Save these numbers on your phone. They are free to call 24/7 from any mobile or landline.</p>
+          <div class="emergency-numbers">
+            <div class="emergency-num"><strong>100</strong><span>POLICE</span></div>
+            <div class="emergency-num"><strong>181</strong><span>WOMEN HELPLINE</span></div>
+            <div class="emergency-num"><strong>1098</strong><span>CHILDLINE</span></div>
+            <div class="emergency-num"><strong>1930</strong><span>CYBER CRIME</span></div>
+            <div class="emergency-num"><strong>112</strong><span>EMERGENCY (ALL)</span></div>
+            <div class="emergency-num"><strong>102</strong><span>AMBULANCE</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     ABOUT
+══════════════════════════════════ -->
+<div id="page-about" class="page">
+  <div class="about-hero">
+    <div class="container">
+      <div class="hero-label">Technical Documentation</div>
+      <h1 class="hero" style="font-size:clamp(2.5rem,5vw,4rem)">HOW IT<br><span class="line2">WORKS</span></h1>
+      <p style="max-width:440px;margin-top:0.5rem">A complete overview of the machine learning pipeline, data processing, and model architecture behind this platform.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+      <div class="about-grid">
+        <div class="about-card" data-icon="📊">
+          <h3>DATASET</h3>
+          <p>1,200 records spanning 20 years (2005–2024) across 60 districts in 12 Indian states. Zero missing values — clean, well-structured CSV data.</p>
+          <ul class="about-list">
+            <li><span class="num">01</span><span class="txt">12 states, 60 districts covered</span></li>
+            <li><span class="num">02</span><span class="txt">6 crime categories: Murder, Rape, Kidnapping, Theft, Cyber Crime, Total</span></li>
+            <li><span class="num">03</span><span class="txt">Population data for per-capita normalisation</span></li>
+            <li><span class="num">04</span><span class="txt">No null values — 100% data quality</span></li>
+          </ul>
+        </div>
+        <div class="about-card" data-icon="🤖">
+          <h3>ML MODELS</h3>
+          <p>Two models are trained using scikit-learn on the full dataset with label encoding for categorical features.</p>
+          <ul class="about-list">
+            <li><span class="num">M1</span><span class="txt">Random Forest Classifier — predicts dominant crime type (Theft, Cyber Crime, Kidnapping)</span></li>
+            <li><span class="num">M2</span><span class="txt">Gradient Boosting Regressor — predicts risk score 0–10 based on per-100k-population normalisation</span></li>
+            <li><span class="num">FE</span><span class="txt">Features: Year, State (encoded), District (encoded), Population</span></li>
+          </ul>
+        </div>
+        <div class="about-card" data-icon="⚙️">
+          <h3>TECH STACK</h3>
+          <p>Python for data science, self-contained HTML/CSS/JS for the frontend — deployable on any platform.</p>
+          <ul class="about-list">
+            <li><span class="num">PY</span><span class="txt">Python 3 — data processing & model training</span></li>
+            <li><span class="num">PD</span><span class="txt">Pandas — data loading, cleaning, feature engineering</span></li>
+            <li><span class="num">SK</span><span class="txt">scikit-learn — Random Forest, Gradient Boosting</span></li>
+            <li><span class="num">JS</span><span class="txt">Chart.js — all interactive visualisations</span></li>
+          </ul>
+        </div>
+        <div class="about-card" data-icon="📐">
+          <h3>RISK FORMULA</h3>
+          <p>The risk score is computed using a two-step normalisation and prediction pipeline.</p>
+          <ul class="about-list">
+            <li><span class="num">1</span><span class="txt">Raw score = Total_Crime / Population × 100,000</span></li>
+            <li><span class="num">2</span><span class="txt">Min-max normalise across all districts → 0 to 10 scale</span></li>
+            <li><span class="num">3</span><span class="txt">GBR model learns to predict this score for future years</span></li>
+            <li><span class="num">4</span><span class="txt">2025 is predicted by extrapolating from the 2024 trend</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <div class="container">
+    CRIMERISK INDIA · BUILT FOR COLLEGE PROJECT · DATA SOURCE: INDIA DISTRICT CRIME RECORDS 2005–2024 · <span>ML MODELS: RANDOM FOREST + GRADIENT BOOSTING</span>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════════
+     DATA & SCRIPTS
+══════════════════════════════════ -->
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIGURATION — Python Flask API endpoint
+// ═══════════════════════════════════════════════════════════
+const API_BASE = 'http://localhost:5000';
+
+// ═══════════════════════════════════════════════════════════
+//  DATA — Loaded from Python ML models (Random Forest + GBR)
+//  Predictions generated by: train.py
+//  Served by: app.py (Flask)
+// ═══════════════════════════════════════════════════════════
+const YEARLY    = [{"Year": 2005, "Total_Crime": 214028, "Cyber_Crime": 14569, "Murder": 15906, "Theft": 148519, "Rape": 15166, "Kidnapping": 19868}, {"Year": 2006, "Total_Crime": 241027, "Cyber_Crime": 19983, "Murder": 16908, "Theft": 169104, "Rape": 15487, "Kidnapping": 19545}, {"Year": 2007, "Total_Crime": 237290, "Cyber_Crime": 23395, "Murder": 16061, "Theft": 167602, "Rape": 12488, "Kidnapping": 17744}, {"Year": 2008, "Total_Crime": 244189, "Cyber_Crime": 25094, "Murder": 17528, "Theft": 169554, "Rape": 12481, "Kidnapping": 19532}, {"Year": 2009, "Total_Crime": 244178, "Cyber_Crime": 28739, "Murder": 14946, "Theft": 168048, "Rape": 13859, "Kidnapping": 18586}, {"Year": 2010, "Total_Crime": 248104, "Cyber_Crime": 30018, "Murder": 17964, "Theft": 168107, "Rape": 14152, "Kidnapping": 17863}, {"Year": 2011, "Total_Crime": 236644, "Cyber_Crime": 33395, "Murder": 16455, "Theft": 153773, "Rape": 14271, "Kidnapping": 18750}, {"Year": 2012, "Total_Crime": 256015, "Cyber_Crime": 35019, "Murder": 17011, "Theft": 171340, "Rape": 12401, "Kidnapping": 20244}, {"Year": 2013, "Total_Crime": 242591, "Cyber_Crime": 39241, "Murder": 16959, "Theft": 153762, "Rape": 12821, "Kidnapping": 19808}, {"Year": 2014, "Total_Crime": 251194, "Cyber_Crime": 43777, "Murder": 17262, "Theft": 160190, "Rape": 11944, "Kidnapping": 18021}, {"Year": 2015, "Total_Crime": 253852, "Cyber_Crime": 44186, "Murder": 16902, "Theft": 161942, "Rape": 11703, "Kidnapping": 19119}, {"Year": 2016, "Total_Crime": 240078, "Cyber_Crime": 48738, "Murder": 17187, "Theft": 141434, "Rape": 12732, "Kidnapping": 19987}, {"Year": 2017, "Total_Crime": 290856, "Cyber_Crime": 51741, "Murder": 16710, "Theft": 191208, "Rape": 11867, "Kidnapping": 19330}, {"Year": 2018, "Total_Crime": 273876, "Cyber_Crime": 54805, "Murder": 17123, "Theft": 170158, "Rape": 13268, "Kidnapping": 18522}, {"Year": 2019, "Total_Crime": 269218, "Cyber_Crime": 56221, "Murder": 15691, "Theft": 169201, "Rape": 12720, "Kidnapping": 15385}, {"Year": 2020, "Total_Crime": 289563, "Cyber_Crime": 59627, "Murder": 16861, "Theft": 180782, "Rape": 12856, "Kidnapping": 19437}, {"Year": 2021, "Total_Crime": 252049, "Cyber_Crime": 63479, "Murder": 16096, "Theft": 139107, "Rape": 12866, "Kidnapping": 20501}, {"Year": 2022, "Total_Crime": 286593, "Cyber_Crime": 67644, "Murder": 17698, "Theft": 170398, "Rape": 12323, "Kidnapping": 18530}, {"Year": 2023, "Total_Crime": 288244, "Cyber_Crime": 69724, "Murder": 17325, "Theft": 167558, "Rape": 12559, "Kidnapping": 21078}, {"Year": 2024, "Total_Crime": 274251, "Cyber_Crime": 73231, "Murder": 16635, "Theft": 153657, "Rape": 13176, "Kidnapping": 17552}];
+const STATES    = [{"State": "Andhra Pradesh", "Total_Crime": 450912, "Murder": 27781, "Rape": 21381, "Kidnapping": 33098, "Theft": 295105, "Cyber_Crime": 73547, "risk": 10.0}, {"State": "Bihar", "Total_Crime": 403416, "Murder": 27085, "Rape": 20473, "Kidnapping": 28438, "Theft": 254297, "Cyber_Crime": 73123, "risk": 8.9}, {"State": "Delhi", "Total_Crime": 421152, "Murder": 28335, "Rape": 20944, "Kidnapping": 30433, "Theft": 269601, "Cyber_Crime": 71839, "risk": 9.3}, {"State": "Gujarat", "Total_Crime": 447245, "Murder": 27941, "Rape": 23198, "Kidnapping": 29657, "Theft": 292104, "Cyber_Crime": 74345, "risk": 9.9}, {"State": "Karnataka", "Total_Crime": 435845, "Murder": 27702, "Rape": 23593, "Kidnapping": 29015, "Theft": 282008, "Cyber_Crime": 73527, "risk": 9.7}, {"State": "Madhya Pradesh", "Total_Crime": 436897, "Murder": 26462, "Rape": 22408, "Kidnapping": 31629, "Theft": 280917, "Cyber_Crime": 75481, "risk": 9.7}, {"State": "Maharashtra", "Total_Crime": 409981, "Murder": 27592, "Rape": 22050, "Kidnapping": 32142, "Theft": 254332, "Cyber_Crime": 73865, "risk": 9.1}, {"State": "Rajasthan", "Total_Crime": 411891, "Murder": 29523, "Rape": 22276, "Kidnapping": 33750, "Theft": 252674, "Cyber_Crime": 73668, "risk": 9.1}, {"State": "Tamil Nadu", "Total_Crime": 433680, "Murder": 29928, "Rape": 21180, "Kidnapping": 33139, "Theft": 275731, "Cyber_Crime": 73702, "risk": 9.6}, {"State": "Telangana", "Total_Crime": 426298, "Murder": 26886, "Rape": 20274, "Kidnapping": 33433, "Theft": 273967, "Cyber_Crime": 71738, "risk": 9.5}, {"State": "Uttar Pradesh", "Total_Crime": 431670, "Murder": 27773, "Rape": 21798, "Kidnapping": 31717, "Theft": 276975, "Cyber_Crime": 73407, "risk": 9.6}, {"State": "West Bengal", "Total_Crime": 424853, "Murder": 28220, "Rape": 21565, "Kidnapping": 32951, "Theft": 267733, "Cyber_Crime": 74384, "risk": 9.4}];
+const DISTRICTS = [{"State": "Andhra Pradesh", "District": "Visakhapatnam", "Total_Crime": 3496, "Murder": 366, "Rape": 225, "Kidnapping": 380, "Theft": 1352, "Cyber_Crime": 1173, "risk_score": 0.42, "predicted_risk_2025": 0.49, "predicted_crime_type": "Theft", "population": 5682133}, {"State": "Andhra Pradesh", "District": "Vijayawada", "Total_Crime": 2825, "Murder": 369, "Rape": 98, "Kidnapping": 317, "Theft": 1038, "Cyber_Crime": 1003, "risk_score": 0.12, "predicted_risk_2025": 0.22, "predicted_crime_type": "Theft", "population": 11401608}, {"State": "Andhra Pradesh", "District": "Guntur", "Total_Crime": 3968, "Murder": 215, "Rape": 162, "Kidnapping": 585, "Theft": 1568, "Cyber_Crime": 1438, "risk_score": 0.17, "predicted_risk_2025": 0.21, "predicted_crime_type": "Theft", "population": 12678287}, {"State": "Andhra Pradesh", "District": "Nellore", "Total_Crime": 6685, "Murder": 362, "Rape": 214, "Kidnapping": 124, "Theft": 4623, "Cyber_Crime": 1362, "risk_score": 3.95, "predicted_risk_2025": 3.78, "predicted_crime_type": "Theft", "population": 1374783}, {"State": "Andhra Pradesh", "District": "Kurnool", "Total_Crime": 6525, "Murder": 446, "Rape": 206, "Kidnapping": 595, "Theft": 4183, "Cyber_Crime": 1095, "risk_score": 0.28, "predicted_risk_2025": 0.22, "predicted_crime_type": "Theft", "population": 14709356}, {"State": "Telangana", "District": "Hyderabad", "Total_Crime": 6665, "Murder": 69, "Rape": 204, "Kidnapping": 443, "Theft": 4803, "Cyber_Crime": 1146, "risk_score": 0.6, "predicted_risk_2025": 0.45, "predicted_crime_type": "Theft", "population": 8011166}, {"State": "Telangana", "District": "Warangal", "Total_Crime": 5015, "Murder": 238, "Rape": 271, "Kidnapping": 292, "Theft": 2857, "Cyber_Crime": 1357, "risk_score": 1.09, "predicted_risk_2025": 1.02, "predicted_crime_type": "Theft", "population": 3534590}, {"State": "Telangana", "District": "Nizamabad", "Total_Crime": 5580, "Murder": 436, "Rape": 105, "Kidnapping": 516, "Theft": 3089, "Cyber_Crime": 1434, "risk_score": 0.26, "predicted_risk_2025": 0.22, "predicted_crime_type": "Theft", "population": 13372732}, {"State": "Telangana", "District": "Karimnagar", "Total_Crime": 3879, "Murder": 353, "Rape": 320, "Kidnapping": 177, "Theft": 1761, "Cyber_Crime": 1268, "risk_score": 0.38, "predicted_risk_2025": 0.52, "predicted_crime_type": "Theft", "population": 6918639}, {"State": "Telangana", "District": "Khammam", "Total_Crime": 6158, "Murder": 122, "Rape": 283, "Kidnapping": 256, "Theft": 4450, "Cyber_Crime": 1047, "risk_score": 0.26, "predicted_risk_2025": 0.22, "predicted_crime_type": "Theft", "population": 14684216}, {"State": "Tamil Nadu", "District": "Chennai", "Total_Crime": 6781, "Murder": 73, "Rape": 174, "Kidnapping": 385, "Theft": 4730, "Cyber_Crime": 1419, "risk_score": 7.33, "predicted_risk_2025": 7.18, "predicted_crime_type": "Theft", "population": 758944}, {"State": "Tamil Nadu", "District": "Coimbatore", "Total_Crime": 4680, "Murder": 91, "Rape": 179, "Kidnapping": 252, "Theft": 3164, "Cyber_Crime": 994, "risk_score": 0.19, "predicted_risk_2025": 0.2, "predicted_crime_type": "Theft", "population": 13785028}, {"State": "Tamil Nadu", "District": "Madurai", "Total_Crime": 2749, "Murder": 135, "Rape": 229, "Kidnapping": 171, "Theft": 876, "Cyber_Crime": 1338, "risk_score": 0.09, "predicted_risk_2025": 0.16, "predicted_crime_type": "Cyber_Crime", "population": 12919159}, {"State": "Tamil Nadu", "District": "Salem", "Total_Crime": 4259, "Murder": 265, "Rape": 139, "Kidnapping": 156, "Theft": 2369, "Cyber_Crime": 1330, "risk_score": 0.16, "predicted_risk_2025": 0.18, "predicted_crime_type": "Theft", "population": 13880144}, {"State": "Tamil Nadu", "District": "Tiruchirappalli", "Total_Crime": 4267, "Murder": 381, "Rape": 197, "Kidnapping": 579, "Theft": 2009, "Cyber_Crime": 1101, "risk_score": 4.43, "predicted_risk_2025": 4.57, "predicted_crime_type": "Theft", "population": 784578}, {"State": "Karnataka", "District": "Bengaluru", "Total_Crime": 5505, "Murder": 395, "Rape": 176, "Kidnapping": 169, "Theft": 3737, "Cyber_Crime": 1028, "risk_score": 0.49, "predicted_risk_2025": 0.47, "predicted_crime_type": "Theft", "population": 7940045}, {"State": "Karnataka", "District": "Mysuru", "Total_Crime": 4033, "Murder": 300, "Rape": 271, "Kidnapping": 410, "Theft": 1748, "Cyber_Crime": 1304, "risk_score": 0.54, "predicted_risk_2025": 0.57, "predicted_crime_type": "Theft", "population": 5325236}, {"State": "Karnataka", "District": "Mangaluru", "Total_Crime": 5443, "Murder": 91, "Rape": 361, "Kidnapping": 112, "Theft": 3449, "Cyber_Crime": 1430, "risk_score": 0.27, "predicted_risk_2025": 0.2, "predicted_crime_type": "Theft", "population": 12508203}, {"State": "Karnataka", "District": "Hubli", "Total_Crime": 3588, "Murder": 215, "Rape": 386, "Kidnapping": 371, "Theft": 1435, "Cyber_Crime": 1181, "risk_score": 0.14, "predicted_risk_2025": 0.21, "predicted_crime_type": "Theft", "population": 13036235}, {"State": "Karnataka", "District": "Belagavi", "Total_Crime": 3052, "Murder": 171, "Rape": 300, "Kidnapping": 136, "Theft": 1029, "Cyber_Crime": 1416, "risk_score": 0.81, "predicted_risk_2025": 0.89, "predicted_crime_type": "Cyber_Crime", "population": 2815297}, {"State": "Maharashtra", "District": "Mumbai", "Total_Crime": 4623, "Murder": 388, "Rape": 387, "Kidnapping": 204, "Theft": 2499, "Cyber_Crime": 1145, "risk_score": 0.73, "predicted_risk_2025": 0.66, "predicted_crime_type": "Theft", "population": 4699651}, {"State": "Maharashtra", "District": "Pune", "Total_Crime": 5221, "Murder": 329, "Rape": 115, "Kidnapping": 135, "Theft": 3639, "Cyber_Crime": 1003, "risk_score": 0.38, "predicted_risk_2025": 0.36, "predicted_crime_type": "Theft", "population": 9215475}, {"State": "Maharashtra", "District": "Nagpur", "Total_Crime": 4452, "Murder": 406, "Rape": 358, "Kidnapping": 516, "Theft": 1816, "Cyber_Crime": 1356, "risk_score": 0.33, "predicted_risk_2025": 0.36, "predicted_crime_type": "Theft", "population": 8848064}, {"State": "Maharashtra", "District": "Nashik", "Total_Crime": 2950, "Murder": 412, "Rape": 84, "Kidnapping": 404, "Theft": 972, "Cyber_Crime": 1078, "risk_score": 0.16, "predicted_risk_2025": 0.28, "predicted_crime_type": "Theft", "population": 9980441}, {"State": "Maharashtra", "District": "Aurangabad", "Total_Crime": 4116, "Murder": 144, "Rape": 40, "Kidnapping": 398, "Theft": 2251, "Cyber_Crime": 1283, "risk_score": 0.27, "predicted_risk_2025": 0.33, "predicted_crime_type": "Theft", "population": 9570371}, {"State": "Uttar Pradesh", "District": "Lucknow", "Total_Crime": 2850, "Murder": 216, "Rape": 316, "Kidnapping": 360, "Theft": 900, "Cyber_Crime": 1058, "risk_score": 0.12, "predicted_risk_2025": 0.23, "predicted_crime_type": "Cyber_Crime", "population": 11367230}, {"State": "Uttar Pradesh", "District": "Kanpur", "Total_Crime": 5321, "Murder": 163, "Rape": 225, "Kidnapping": 168, "Theft": 3680, "Cyber_Crime": 1085, "risk_score": 0.25, "predicted_risk_2025": 0.25, "predicted_crime_type": "Theft", "population": 13137899}, {"State": "Uttar Pradesh", "District": "Varanasi", "Total_Crime": 6280, "Murder": 127, "Rape": 375, "Kidnapping": 156, "Theft": 4623, "Cyber_Crime": 999, "risk_score": 0.82, "predicted_risk_2025": 0.73, "predicted_crime_type": "Theft", "population": 5709043}, {"State": "Uttar Pradesh", "District": "Agra", "Total_Crime": 2452, "Murder": 67, "Rape": 233, "Kidnapping": 333, "Theft": 688, "Cyber_Crime": 1131, "risk_score": 1.81, "predicted_risk_2025": 1.85, "predicted_crime_type": "Cyber_Crime", "population": 1073786}, {"State": "Uttar Pradesh", "District": "Meerut", "Total_Crime": 6912, "Murder": 347, "Rape": 241, "Kidnapping": 406, "Theft": 4940, "Cyber_Crime": 978, "risk_score": 0.35, "predicted_risk_2025": 0.26, "predicted_crime_type": "Theft", "population": 13145622}, {"State": "West Bengal", "District": "Kolkata", "Total_Crime": 4648, "Murder": 448, "Rape": 387, "Kidnapping": 70, "Theft": 2648, "Cyber_Crime": 1095, "risk_score": 0.19, "predicted_risk_2025": 0.19, "predicted_crime_type": "Theft", "population": 13829289}, {"State": "West Bengal", "District": "Howrah", "Total_Crime": 4645, "Murder": 388, "Rape": 147, "Kidnapping": 241, "Theft": 2691, "Cyber_Crime": 1178, "risk_score": 0.62, "predicted_risk_2025": 0.64, "predicted_crime_type": "Theft", "population": 5439632}, {"State": "West Bengal", "District": "Durgapur", "Total_Crime": 2683, "Murder": 292, "Rape": 66, "Kidnapping": 69, "Theft": 925, "Cyber_Crime": 1331, "risk_score": 0.22, "predicted_risk_2025": 0.54, "predicted_crime_type": "Theft", "population": 7078478}, {"State": "West Bengal", "District": "Siliguri", "Total_Crime": 4459, "Murder": 380, "Rape": 230, "Kidnapping": 355, "Theft": 2261, "Cyber_Crime": 1233, "risk_score": 1.16, "predicted_risk_2025": 1.22, "predicted_crime_type": "Theft", "population": 2964296}, {"State": "West Bengal", "District": "Asansol", "Total_Crime": 6145, "Murder": 466, "Rape": 258, "Kidnapping": 425, "Theft": 3862, "Cyber_Crime": 1134, "risk_score": 0.64, "predicted_risk_2025": 0.58, "predicted_crime_type": "Theft", "population": 6965521}, {"State": "Gujarat", "District": "Ahmedabad", "Total_Crime": 5020, "Murder": 71, "Rape": 350, "Kidnapping": 128, "Theft": 3461, "Cyber_Crime": 1010, "risk_score": 0.3, "predicted_risk_2025": 0.29, "predicted_crime_type": "Theft", "population": 10723144}, {"State": "Gujarat", "District": "Surat", "Total_Crime": 2961, "Murder": 81, "Rape": 397, "Kidnapping": 187, "Theft": 873, "Cyber_Crime": 1423, "risk_score": 0.15, "predicted_risk_2025": 0.23, "predicted_crime_type": "Cyber_Crime", "population": 10341296}, {"State": "Gujarat", "District": "Vadodara", "Total_Crime": 6261, "Murder": 346, "Rape": 339, "Kidnapping": 398, "Theft": 3750, "Cyber_Crime": 1428, "risk_score": 0.31, "predicted_risk_2025": 0.26, "predicted_crime_type": "Theft", "population": 13154815}, {"State": "Gujarat", "District": "Rajkot", "Total_Crime": 2457, "Murder": 432, "Rape": 186, "Kidnapping": 113, "Theft": 564, "Cyber_Crime": 1162, "risk_score": 0.13, "predicted_risk_2025": 0.37, "predicted_crime_type": "Theft", "population": 9280931}, {"State": "Gujarat", "District": "Bhavnagar", "Total_Crime": 4260, "Murder": 79, "Rape": 234, "Kidnapping": 93, "Theft": 2421, "Cyber_Crime": 1433, "risk_score": 0.55, "predicted_risk_2025": 0.64, "predicted_crime_type": "Theft", "population": 5507059}, {"State": "Rajasthan", "District": "Jaipur", "Total_Crime": 4022, "Murder": 437, "Rape": 161, "Kidnapping": 302, "Theft": 2028, "Cyber_Crime": 1094, "risk_score": 1.01, "predicted_risk_2025": 1.02, "predicted_crime_type": "Theft", "population": 3029059}, {"State": "Rajasthan", "District": "Jodhpur", "Total_Crime": 6233, "Murder": 427, "Rape": 193, "Kidnapping": 581, "Theft": 3775, "Cyber_Crime": 1257, "risk_score": 0.99, "predicted_risk_2025": 0.87, "predicted_crime_type": "Theft", "population": 4795767}, {"State": "Rajasthan", "District": "Udaipur", "Total_Crime": 3903, "Murder": 219, "Rape": 131, "Kidnapping": 71, "Theft": 2050, "Cyber_Crime": 1432, "risk_score": 0.13, "predicted_risk_2025": 0.16, "predicted_crime_type": "Theft", "population": 14676135}, {"State": "Rajasthan", "District": "Kota", "Total_Crime": 3489, "Murder": 140, "Rape": 225, "Kidnapping": 473, "Theft": 1415, "Cyber_Crime": 1236, "risk_score": 0.35, "predicted_risk_2025": 0.55, "predicted_crime_type": "Theft", "population": 6616083}, {"State": "Rajasthan", "District": "Ajmer", "Total_Crime": 6116, "Murder": 488, "Rape": 133, "Kidnapping": 238, "Theft": 4119, "Cyber_Crime": 1138, "risk_score": 4.64, "predicted_risk_2025": 4.58, "predicted_crime_type": "Theft", "population": 1073692}, {"State": "Madhya Pradesh", "District": "Bhopal", "Total_Crime": 4725, "Murder": 347, "Rape": 378, "Kidnapping": 266, "Theft": 2448, "Cyber_Crime": 1286, "risk_score": 7.09, "predicted_risk_2025": 7.12, "predicted_crime_type": "Theft", "population": 547028}, {"State": "Madhya Pradesh", "District": "Indore", "Total_Crime": 6429, "Murder": 74, "Rape": 34, "Kidnapping": 192, "Theft": 4809, "Cyber_Crime": 1320, "risk_score": 0.94, "predicted_risk_2025": 0.73, "predicted_crime_type": "Theft", "population": 5170506}, {"State": "Madhya Pradesh", "District": "Gwalior", "Total_Crime": 3621, "Murder": 206, "Rape": 131, "Kidnapping": 521, "Theft": 1410, "Cyber_Crime": 1353, "risk_score": 1.17, "predicted_risk_2025": 1.23, "predicted_crime_type": "Theft", "population": 2386975}, {"State": "Madhya Pradesh", "District": "Jabalpur", "Total_Crime": 6372, "Murder": 242, "Rape": 102, "Kidnapping": 279, "Theft": 4306, "Cyber_Crime": 1443, "risk_score": 0.94, "predicted_risk_2025": 0.78, "predicted_crime_type": "Theft", "population": 5163315}, {"State": "Madhya Pradesh", "District": "Ujjain", "Total_Crime": 5134, "Murder": 433, "Rape": 195, "Kidnapping": 197, "Theft": 3334, "Cyber_Crime": 975, "risk_score": 1.86, "predicted_risk_2025": 1.8, "predicted_crime_type": "Theft", "population": 2187913}, {"State": "Bihar", "District": "Patna", "Total_Crime": 3445, "Murder": 266, "Rape": 156, "Kidnapping": 411, "Theft": 1180, "Cyber_Crime": 1432, "risk_score": 4.21, "predicted_risk_2025": 6.44, "predicted_crime_type": "Theft", "population": 665947}, {"State": "Bihar", "District": "Gaya", "Total_Crime": 5996, "Murder": 274, "Rape": 240, "Kidnapping": 100, "Theft": 4056, "Cyber_Crime": 1326, "risk_score": 0.25, "predicted_risk_2025": 0.19, "predicted_crime_type": "Theft", "population": 14783080}, {"State": "Bihar", "District": "Muzaffarpur", "Total_Crime": 4469, "Murder": 367, "Rape": 112, "Kidnapping": 574, "Theft": 2177, "Cyber_Crime": 1239, "risk_score": 0.32, "predicted_risk_2025": 0.28, "predicted_crime_type": "Theft", "population": 9010395}, {"State": "Bihar", "District": "Bhagalpur", "Total_Crime": 3667, "Murder": 77, "Rape": 32, "Kidnapping": 349, "Theft": 1913, "Cyber_Crime": 1296, "risk_score": 0.24, "predicted_risk_2025": 0.37, "predicted_crime_type": "Theft", "population": 9182313}, {"State": "Bihar", "District": "Darbhanga", "Total_Crime": 3115, "Murder": 157, "Rape": 390, "Kidnapping": 203, "Theft": 956, "Cyber_Crime": 1409, "risk_score": 0.61, "predicted_risk_2025": 0.72, "predicted_crime_type": "Cyber_Crime", "population": 3720874}, {"State": "Delhi", "District": "Central Delhi", "Total_Crime": 6920, "Murder": 473, "Rape": 225, "Kidnapping": 451, "Theft": 4647, "Cyber_Crime": 1124, "risk_score": 0.43, "predicted_risk_2025": 0.28, "predicted_crime_type": "Theft", "population": 10979027}, {"State": "Delhi", "District": "North Delhi", "Total_Crime": 3406, "Murder": 441, "Rape": 312, "Kidnapping": 462, "Theft": 965, "Cyber_Crime": 1226, "risk_score": 0.45, "predicted_risk_2025": 0.55, "predicted_crime_type": "Cyber_Crime", "population": 5263716}, {"State": "Delhi", "District": "South Delhi", "Total_Crime": 2767, "Murder": 193, "Rape": 279, "Kidnapping": 61, "Theft": 1273, "Cyber_Crime": 961, "risk_score": 0.09, "predicted_risk_2025": 0.19, "predicted_crime_type": "Theft", "population": 12500191}, {"State": "Delhi", "District": "East Delhi", "Total_Crime": 3963, "Murder": 258, "Rape": 65, "Kidnapping": 78, "Theft": 2289, "Cyber_Crime": 1273, "risk_score": 0.19, "predicted_risk_2025": 0.22, "predicted_crime_type": "Theft", "population": 11823662}, {"State": "Delhi", "District": "West Delhi", "Total_Crime": 2590, "Murder": 441, "Rape": 214, "Kidnapping": 158, "Theft": 773, "Cyber_Crime": 1004, "risk_score": 0.11, "predicted_risk_2025": 0.17, "predicted_crime_type": "Cyber_Crime", "population": 10514836}];
+const META      = {"states": ["Andhra Pradesh", "Bihar", "Delhi", "Gujarat", "Karnataka", "Madhya Pradesh", "Maharashtra", "Rajasthan", "Tamil Nadu", "Telangana", "Uttar Pradesh", "West Bengal"], "districts": {"Andhra Pradesh": ["Guntur", "Kurnool", "Nellore", "Vijayawada", "Visakhapatnam"], "Telangana": ["Hyderabad", "Karimnagar", "Khammam", "Nizamabad", "Warangal"], "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem", "Tiruchirappalli"], "Karnataka": ["Belagavi", "Bengaluru", "Hubli", "Mangaluru", "Mysuru"], "Maharashtra": ["Aurangabad", "Mumbai", "Nagpur", "Nashik", "Pune"], "Uttar Pradesh": ["Agra", "Kanpur", "Lucknow", "Meerut", "Varanasi"], "West Bengal": ["Asansol", "Durgapur", "Howrah", "Kolkata", "Siliguri"], "Gujarat": ["Ahmedabad", "Bhavnagar", "Rajkot", "Surat", "Vadodara"], "Rajasthan": ["Ajmer", "Jaipur", "Jodhpur", "Kota", "Udaipur"], "Madhya Pradesh": ["Bhopal", "Gwalior", "Indore", "Jabalpur", "Ujjain"], "Bihar": ["Bhagalpur", "Darbhanga", "Gaya", "Muzaffarpur", "Patna"], "Delhi": ["Central Delhi", "East Delhi", "North Delhi", "South Delhi", "West Delhi"]}};
+
+// ═══════════════════════════════════════════════════════════
+//  API HELPER — calls Python Flask backend
+// ═══════════════════════════════════════════════════════════
+async function callAPI(endpoint, method='GET', body=null) {
+  try {
+    const opts = {
+      method,
+      headers: {'Content-Type': 'application/json'},
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API_BASE + endpoint, opts);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch(e) {
+    console.warn('API call failed (using local ML data):', e.message);
+    return null;
+  }
+}
+
+// City image helper
+function getCityImg(district) {
+  const imgs = {
+    'Hyderabad':     'https://images.unsplash.com/photo-1583425921686-c5daf5f49e4a?w=800&q=80',
+    'Mumbai':        'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=800&q=80',
+    'Delhi':         'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800&q=80',
+    'Bengaluru':     'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=800&q=80',
+    'Chennai':       'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800&q=80',
+    'Kolkata':       'https://images.unsplash.com/photo-1558431382-27e303142255?w=800&q=80',
+    'Jaipur':        'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&q=80',
+    'Lucknow':       'https://images.unsplash.com/photo-1609948543911-4fd07c952b57?w=800&q=80',
+  };
+  return imgs[district] || 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&q=80';
+}
+
+// Precautions data
+function getPrecautions(district) {
+  const d = DISTRICTS.find(x => x.District === district);
+  const type = d ? d.predicted_crime_type : 'Theft';
+  const all = {
+    Theft: [
+      {icon:'🔒',t:'Secure Your Home',d:'Install double-lock doors, window grilles, CCTV. Use smart locks. Lock all entry points before sleeping or going out.'},
+      {icon:'💼',t:'Protect Valuables in Public',d:'Use front-facing bags in crowded places. Keep phones in inner pockets. Avoid displaying expensive items in busy markets.'},
+      {icon:'🚗',t:'Vehicle Security',d:'Always lock your vehicle. Never leave valuables visible. Use steering locks. Park in well-lit areas. Install GPS trackers.'},
+      {icon:'👁️',t:'Know Your Neighbourhood',d:'Join a local watch group. Report suspicious strangers or vehicles. Keep emergency contacts handy at all times.'},
+    ],
+    Cyber_Crime: [
+      {icon:'🔐',t:'Strong Passwords',d:'Use 12+ character unique passwords everywhere. Use a password manager. Enable 2-factor authentication on all accounts.'},
+      {icon:'🎣',t:'Beware of Phishing',d:'Never click links in unexpected SMS or email. Verify bank requests by calling official numbers. Never share OTP.'},
+      {icon:'💳',t:'Safe Online Payments',d:'Use UPI with screen lock. Never share OTP. Check for HTTPS before card details. Set transaction limits.'},
+      {icon:'🚨',t:'Report Immediately',d:'File at cybercrime.gov.in or call 1930 (National Cybercrime Helpline) immediately. Time is critical in fraud recovery.'},
+    ],
+    Kidnapping: [
+      {icon:'👨‍👩‍👧',t:'Family Safety Protocols',d:'Establish code words with children. Teach the No Stranger rule. Always share whereabouts with trusted family members.'},
+      {icon:'📍',t:'Track & Share Location',d:'Use Google Family Sharing or similar. Always inform someone of your destination and expected return time.'},
+      {icon:'🚨',t:'Report Missing Immediately',d:'File a missing person report within hours. Call CHILDLINE 1098 for children. Do not wait — early action is critical.'},
+      {icon:'🔍',t:'Stay Alert',d:'If you sense you are being followed, go to a crowded public place immediately and call police 100.'},
+    ],
+  };
+  const tips = all[type] || all['Theft'];
+  return {type, tips};
+}
+
+// Chart tooltip defaults
+Chart.defaults.color        = '#8b8fa8';
+Chart.defaults.borderColor  = 'rgba(255,255,255,0.05)';
+Chart.defaults.font.family  = "'JetBrains Mono', monospace";
+Chart.defaults.font.size    = 10;
+const TT = {
+  backgroundColor:'#080b14', borderColor:'rgba(255,255,255,0.08)',
+  borderWidth:1, titleColor:'#f0f2f8', bodyColor:'#8b8fa8', padding:10,
+  callbacks:{label: c => ' ' + (c.parsed.y ?? c.parsed).toLocaleString()}
+};
+
+// ═══════════════════════════════════════════════════════════
+//  DASHBOARD — charts from Python ML data
+// ═══════════════════════════════════════════════════════════
+function initDashboard() {
+  // Trend line chart
+  new Chart(document.getElementById('c-trend'), {
+    type:'line',
+    data:{
+      labels:YEARLY.map(d=>d.Year),
+      datasets:[
+        {label:'Total Crime',data:YEARLY.map(d=>d.Total_Crime),borderColor:'#ff2d55',borderWidth:2.5,
+          pointRadius:4,pointBackgroundColor:'#ff2d55',fill:true,backgroundColor:'rgba(255,45,85,0.07)',tension:0.35},
+        {label:'Theft',data:YEARLY.map(d=>d.Theft),borderColor:'#0a84ff',borderWidth:1.5,pointRadius:3,fill:false,tension:0.35},
+        {label:'Cyber Crime',data:YEARLY.map(d=>d.Cyber_Crime),borderColor:'#30d158',borderWidth:1.5,pointRadius:3,fill:false,tension:0.35}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#8b8fa8',boxWidth:14,font:{size:10}}},tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': '+c.parsed.y.toLocaleString()}}},
+      scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{maxRotation:0}},
+              y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v}}}}
+  });
+  // Donut
+  const L = YEARLY[YEARLY.length-1];
+  new Chart(document.getElementById('c-donut'), {
+    type:'doughnut',
+    data:{
+      labels:['Theft','Cyber Crime','Murder','Rape','Kidnapping'],
+      datasets:[{data:[L.Theft,L.Cyber_Crime,L.Murder,Math.round(L.Total_Crime*0.065),Math.round(L.Total_Crime*0.062)],
+        backgroundColor:['#ff2d55','#30d158','#ff9f0a','#a78bfa','#0a84ff'],borderWidth:0,hoverOffset:8}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+      plugins:{legend:{display:true,position:'bottom',labels:{color:'#8b8fa8',padding:10,font:{size:10}}},tooltip:{...TT,callbacks:{label:c=>' '+c.label+': '+c.parsed.toLocaleString()}}}}
+  });
+  // States bar
+  const ts = [...STATES].sort((a,b)=>b.Total_Crime-a.Total_Crime).slice(0,10);
+  new Chart(document.getElementById('c-states'), {
+    type:'bar',
+    data:{
+      labels:ts.map(s=>s.State.split(' ')[0]),
+      datasets:[{data:ts.map(s=>s.Total_Crime),
+        backgroundColor:ts.map((_,i)=>`hsla(${360-i*30},75%,60%,0.75)`),borderRadius:6,borderWidth:0}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:TT},
+      scales:{x:{grid:{display:false},ticks:{color:'#8b8fa8'}},
+              y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v}}}}
+  });
+  // Cyber growth
+  new Chart(document.getElementById('c-cyber'), {
+    type:'line',
+    data:{
+      labels:YEARLY.map(d=>d.Year),
+      datasets:[{data:YEARLY.map(d=>d.Cyber_Crime),borderColor:'#30d158',borderWidth:2.5,
+        pointRadius:4,pointBackgroundColor:'#30d158',fill:true,
+        backgroundColor:'rgba(48,209,88,0.07)',tension:0.4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:TT},
+      scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{maxRotation:0}},
+              y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v}}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PREDICT — calls Python Flask /predict endpoint (RF + GBR)
+// ═══════════════════════════════════════════════════════════
+function initPredict() {
+  const s = document.getElementById('pred-state');
+  META.states.forEach(st => {
+    const o=document.createElement('option'); o.value=st; o.textContent=st; s.appendChild(o);
+  });
+}
+
+function updateDistricts() {
+  const state = document.getElementById('pred-state').value;
+  const dd = document.getElementById('pred-district');
+  dd.innerHTML = '<option value="">— Choose a District —</option>';
+  (META.districts[state]||[]).forEach(d => {
+    const o=document.createElement('option'); o.value=d; o.textContent=d; dd.appendChild(o);
+  });
+}
+
+async function runPrediction() {
+  const state    = document.getElementById('pred-state').value;
+  const district = document.getElementById('pred-district').value;
+  if (!state || !district) { alert('Please select both state and district.'); return; }
+
+  // Show loading state on button
+  const btn = document.querySelector('.predict-btn');
+  const origText = btn.textContent;
+  btn.textContent = 'ANALYSING...';
+  btn.disabled = true;
+
+  // ── CALL PYTHON FLASK API (Random Forest + Gradient Boosting) ──
+  let mlResult = await callAPI('/predict', 'POST', { state, district, year: 2025 });
+
+  // Fallback to pre-computed local data if API is offline
+  let d = DISTRICTS.find(x => x.State===state && x.District===district);
+  if (mlResult) {
+    // Merge live API response with static breakdown data
+    d = {...d, predicted_risk_2025: mlResult.ml_risk_score, predicted_crime_type: mlResult.predicted_crime_type};
+  }
+
+  btn.textContent = origText;
+  btn.disabled = false;
+
+  if (!d) return;
+
+  // Show result panel
+  document.getElementById('res-empty').style.display = 'none';
+  const body = document.getElementById('res-body');
+  body.classList.add('show');
+
+  // Hero image
+  document.getElementById('res-hero-img').src = getCityImg(district);
+
+  // Location
+  document.getElementById('res-loc').innerHTML = `${district} <span>· ${state}</span>`;
+
+  // Risk score (from Python ML model)
+  const risk = d.predicted_risk_2025;
+  const pct  = (risk / 10 * 100);
+  const scoreEl = document.getElementById('res-score');
+  scoreEl.textContent = risk.toFixed(2);
+  scoreEl.style.color = risk<3 ? 'var(--green)' : risk<6 ? 'var(--amber)' : 'var(--red)';
+
+  const fill = document.getElementById('res-fill');
+  fill.style.width = '0%';
+  fill.style.background = risk<3 ? 'linear-gradient(90deg,#30d158,#34c759)'
+                        : risk<6 ? 'linear-gradient(90deg,#ff9f0a,#ffd60a)'
+                        :          'linear-gradient(90deg,#ff2d55,#ff6b35)';
+  setTimeout(() => { fill.style.width = pct + '%'; }, 60);
+
+  // Badges — show ML model source
+  const lv = risk<3 ? {t:'LOW RISK',c:'safe'} : risk<6 ? {t:'MODERATE RISK',c:'warn'} : {t:'HIGH RISK',c:'danger'};
+  const src = mlResult ? '🐍 Python ML (Live)' : '📦 Pre-computed ML';
+  document.getElementById('res-badges').innerHTML =
+    `<span class="badge ${lv.c}">${lv.t}</span>
+     <span class="badge info">Dominant: ${d.predicted_crime_type}</span>
+     <span class="badge safe">Pop: ${(d.population/1e6).toFixed(1)}M</span>
+     <span class="badge info">${src}</span>`;
+
+  // Crime grid
+  document.getElementById('res-crime-grid').innerHTML = `
+    <div class="crime-cell"><span class="icon">🔪</span><div class="val">${d.Murder.toLocaleString()}</div><div class="lbl">Murder</div></div>
+    <div class="crime-cell"><span class="icon">🏠</span><div class="val">${d.Theft.toLocaleString()}</div><div class="lbl">Theft</div></div>
+    <div class="crime-cell"><span class="icon">💻</span><div class="val">${d.Cyber_Crime.toLocaleString()}</div><div class="lbl">Cyber Crime</div></div>
+    <div class="crime-cell"><span class="icon">👤</span><div class="val">${d.Kidnapping.toLocaleString()}</div><div class="lbl">Kidnapping</div></div>
+    <div class="crime-cell"><span class="icon">🚨</span><div class="val">${d.Rape.toLocaleString()}</div><div class="lbl">Rape Cases</div></div>
+    <div class="crime-cell"><span class="icon">📊</span><div class="val">${d.Total_Crime.toLocaleString()}</div><div class="lbl">Total (2024)</div></div>`;
+
+  // Precautions
+  const { type, tips } = getPrecautions(district);
+  const crimeNames = {Murder:'Violence',Rape:'Women Safety',Kidnapping:'Kidnapping',Theft:'Theft',Cyber_Crime:'Cyber Crime'};
+  document.getElementById('res-precautions').innerHTML = `
+    <div class="prec-header">TOP <span>PRECAUTIONS</span> FOR ${crimeNames[type]||type}</div>
+    <div class="prec-cards">
+      ${tips.map(t=>`
+        <div class="prec-card">
+          <div class="prec-icon">${t.icon}</div>
+          <div class="prec-text"><strong>${t.t}</strong><p>${t.d}</p></div>
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:1.25rem;padding:1rem;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)">
+      <div style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text3);letter-spacing:0.1em;margin-bottom:0.5rem">
+        MODEL INFO · ${mlResult ? 'LIVE PYTHON API' : 'PRE-COMPUTED'}
+      </div>
+      <div style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text3)">
+        🌳 Random Forest → Crime Type &nbsp;|&nbsp; 📈 Gradient Boosting → Risk Score
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:0.5rem">
+        <span class="badge danger">Police: 100</span>
+        <span class="badge warn">Women: 181</span>
+        <span class="badge info">Cyber: 1930</span>
+        <span class="badge safe">Emergency: 112</span>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EXPLORER — district table
+// ═══════════════════════════════════════════════════════════
+let dChart = null;
+function initExplorer() {
+  const s = document.getElementById('filt-state');
+  META.states.forEach(st=>{ const o=document.createElement('option'); o.value=st; o.textContent=st; s.appendChild(o); });
+  renderTable([...DISTRICTS].sort((a,b)=>b.Total_Crime-a.Total_Crime));
+}
+function filterTable() {
+  const state = document.getElementById('filt-state').value;
+  const sort  = document.getElementById('filt-sort').value || 'Total_Crime';
+  const q     = document.getElementById('search-inp').value.toLowerCase();
+  let data = [...DISTRICTS];
+  if (state) data = data.filter(d=>d.State===state);
+  if (q) data = data.filter(d=>d.District.toLowerCase().includes(q)||d.State.toLowerCase().includes(q));
+  data.sort((a,b)=>b[sort]-a[sort]);
+  renderTable(data);
+  document.getElementById('dist-detail').classList.remove('show');
+}
+function renderTable(data) {
+  document.getElementById('tbl-body').innerHTML = data.map(d => {
+    const r=d.risk_score; const pr=d.predicted_risk_2025;
+    const rc=r<2?'low':r<5?'med':'high'; const prc=pr<2?'low':pr<5?'med':'high';
+    return `<tr onclick="showDetail('${d.State}','${d.District}')">
+      <td>${d.State}</td><td><strong>${d.District}</strong></td>
+      <td class="mono">${d.Total_Crime.toLocaleString()}</td>
+      <td class="mono">${d.Murder.toLocaleString()}</td>
+      <td class="mono">${d.Theft.toLocaleString()}</td>
+      <td class="mono">${d.Cyber_Crime.toLocaleString()}</td>
+      <td><span class="rbadge ${rc}">${r.toFixed(1)}</span></td>
+      <td><span class="rbadge ${prc}">${pr.toFixed(2)}</span></td>
+    </tr>`;
+  }).join('');
+}
+function showDetail(state, district) {
+  const d = DISTRICTS.find(x=>x.State===state&&x.District===district);
+  if (!d) return;
+  document.getElementById('dist-detail').classList.add('show');
+  document.getElementById('detail-img').src = getCityImg(district);
+  document.getElementById('detail-title').textContent = district+' · '+state;
+  document.getElementById('detail-sub').textContent = `Population: ${d.population.toLocaleString()} · Total Crime 2024: ${d.Total_Crime.toLocaleString()} · Predicted Risk 2025: ${d.predicted_risk_2025}`;
+  document.getElementById('dist-detail').scrollIntoView({behavior:'smooth',block:'nearest'});
+  if (dChart) dChart.destroy();
+  dChart = new Chart(document.getElementById('c-district'), {
+    type:'bar',
+    data:{
+      labels:['Murder','Rape','Kidnapping','Theft','Cyber Crime'],
+      datasets:[{
+        data:[d.Murder,d.Rape,d.Kidnapping,d.Theft,d.Cyber_Crime],
+        backgroundColor:['rgba(255,45,85,0.75)','rgba(255,107,53,0.75)','rgba(255,159,10,0.75)','rgba(10,132,255,0.75)','rgba(48,209,88,0.75)'],
+        borderRadius:8,borderWidth:0
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:TT},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v}}}}
+  });
+}
+
+// ══════ SAFETY TABS ══════
+function showCrime(id, btn) {
+  document.querySelectorAll('.crime-section').forEach(s=>s.classList.remove('show'));
+  document.querySelectorAll('.crime-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('crime-'+id).classList.add('show');
+  btn.classList.add('active');
+}
+
+// ══════ NAVIGATION ══════
+const inited = {};
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  if (!inited[id]) {
+    if (id==='dashboard') initDashboard();
+    if (id==='predict')   initPredict();
+    if (id==='explorer')  initExplorer();
+    inited[id] = true;
+  }
+}
+
+// Boot dashboard on load
+initDashboard(); inited.dashboard = true;
+</script>
+
+</body>
